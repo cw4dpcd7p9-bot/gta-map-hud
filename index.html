@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>GTA-Style Map HUD V5 - Pro Edition</title>
+    <title>GTA-Style Map HUD V5 - Streets Edition</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
@@ -43,8 +43,8 @@
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: repeating-linear-gradient(
                 0deg,
-                rgba(0, 0, 0, 0.15),
-                rgba(0, 0, 0, 0.15) 1px,
+                rgba(0, 0, 0, 0.12),
+                rgba(0, 0, 0, 0.12) 1px,
                 transparent 1px,
                 transparent 2px
             );
@@ -59,9 +59,7 @@
 
         .vignette {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            box-shadow: 
-                0 0 200px rgba(0, 0, 0, 0.9) inset,
-                0 0 100px rgba(242, 201, 76, 0.08) inset;
+            box-shadow: 0 0 200px rgba(0, 0, 0, 0.9) inset;
             pointer-events: none; z-index: 901;
         }
 
@@ -76,38 +74,40 @@
             pointer-events: none;
         }
 
-        /* Toggle Button */
+        #ui-container.minimized {
+            transform: translateX(-330px);
+        }
+
         .toggle-btn {
-            background: linear-gradient(to bottom, var(--gta-gold), #d4a547);
+            background: linear-gradient(to bottom, #f2c94c, #e8b923);
             color: #000;
             border: 2px solid #000;
-            padding: 8px 14px;
+            padding: 8px 12px;
             cursor: pointer;
             font-size: 11px;
-            font-weight: 900;
+            font-weight: bold;
             text-transform: uppercase;
             border-radius: 2px;
-            width: fit-content;
-            pointer-events: auto;
-            transition: all 0.2s;
-            letter-spacing: 1px;
-            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.6);
+            width: 100px;
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.5);
             position: relative;
             top: 0;
+            transition: all 0.1s;
+            font-family: inherit;
+            letter-spacing: 1px;
+            pointer-events: auto;
         }
 
         .toggle-btn:hover {
-            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.6);
+            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.5);
             top: -2px;
-            background: linear-gradient(to bottom, #fff, #f2c94c);
         }
 
         .toggle-btn:active {
             top: 4px;
-            box-shadow: 0 0 0 rgba(0, 0, 0, 0.6);
+            box-shadow: 0 0 0 rgba(0, 0, 0, 0.5);
         }
 
-        /* HUD Panel */
         .hud-panel {
             background: var(--hud-bg);
             border: var(--hud-border);
@@ -118,31 +118,9 @@
                 0 0 25px rgba(242, 201, 76, 0.3),
                 inset 0 0 15px rgba(0, 0, 0, 0.6),
                 0 8px 16px rgba(0, 0, 0, 0.8);
-            pointer-events: auto;
             backdrop-filter: blur(12px);
             animation: hudGlow 3s ease-in-out infinite;
-            max-height: 85vh;
-            overflow-y: auto;
-            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            transform: translateX(0);
-        }
-
-        .hud-panel::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .hud-panel::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.5);
-        }
-
-        .hud-panel::-webkit-scrollbar-thumb {
-            background: var(--gta-gold);
-            border-radius: 3px;
-        }
-
-        .hud-panel.minimized {
-            transform: translateX(calc(-100% - 20px));
-            pointer-events: none;
+            pointer-events: auto;
         }
 
         @keyframes hudGlow {
@@ -150,16 +128,14 @@
             50% { box-shadow: 0 0 35px rgba(242, 201, 76, 0.45), inset 0 0 15px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.8); }
         }
 
-        .hud-divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--gta-gold), transparent);
-            margin: 10px 0;
-            opacity: 0.5;
+        .hud-panel.compact {
+            width: 280px;
+            padding: 12px;
+            animation: none;
         }
 
-        /* Typography */
         h1 {
-            margin: 0 0 12px 0;
+            margin: 0 0 14px 0;
             font-size: 26px;
             text-transform: uppercase;
             letter-spacing: 4px;
@@ -180,7 +156,6 @@
             font-weight: bold;
         }
 
-        /* Button Styling */
         .btn {
             background: linear-gradient(to bottom, #444, #1a1a1a);
             color: #fff;
@@ -235,7 +210,6 @@
                 0 0 15px rgba(46, 204, 113, 0.4);
         }
 
-        /* Select Dropdown */
         select {
             width: 100%;
             padding: 11px;
@@ -258,11 +232,6 @@
             box-shadow: 0 0 15px rgba(242, 201, 76, 0.25);
         }
 
-        select:focus {
-            box-shadow: 0 0 20px rgba(242, 201, 76, 0.4);
-        }
-
-        /* Status Text */
         .status-text {
             font-size: 11px;
             color: #0f0;
@@ -295,42 +264,8 @@
         }
 
         @keyframes errorFlash {
-            0%, 100% { color: var(--gta-red); text-shadow: 0 0 8px rgba(231, 76, 60, 0.6); }
-            50% { color: #ff6b6b; text-shadow: 0 0 12px rgba(231, 76, 60, 0.8); }
-        }
-
-        /* Route Info Panel */
-        #route-info {
-            font-size: 11px;
-            color: var(--gta-green);
-            font-family: 'Courier New', monospace;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            line-height: 1.6;
-        }
-
-        .route-stat {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(242, 201, 76, 0.15);
-        }
-
-        .route-stat:last-child {
-            border-bottom: none;
-        }
-
-        .route-stat-label {
-            color: var(--gta-gold);
-            font-weight: bold;
-            letter-spacing: 1px;
-        }
-
-        .route-stat-value {
-            color: var(--gta-green);
-            font-weight: bold;
-            text-align: right;
+            0%, 100% { color: var(--gta-red); }
+            50% { color: #ff6b6b; }
         }
 
         /* Speedometer */
@@ -376,6 +311,39 @@
             text-transform: uppercase;
         }
 
+        /* Route Info */
+        #route-info {
+            font-size: 11px;
+            color: var(--gta-green);
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            line-height: 1.6;
+        }
+
+        .route-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(242, 201, 76, 0.15);
+        }
+
+        .route-stat:last-child {
+            border-bottom: none;
+        }
+
+        .route-stat-label {
+            color: var(--gta-gold);
+            font-weight: bold;
+        }
+
+        .route-stat-value {
+            color: var(--gta-green);
+            font-weight: bold;
+            text-align: right;
+        }
+
         /* GTA Blip Markers */
         .gta-blip {
             display: flex;
@@ -398,16 +366,8 @@
         }
 
         @keyframes playerPulse {
-            0%, 100% {
-                box-shadow:
-                    0 0 0 0 rgba(46, 204, 113, 0.7),
-                    inset -1px -1px 2px rgba(0, 0, 0, 0.5);
-            }
-            50% {
-                box-shadow:
-                    0 0 0 8px rgba(46, 204, 113, 0),
-                    inset -1px -1px 2px rgba(0, 0, 0, 0.5);
-            }
+            0%, 100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7), inset -1px -1px 2px rgba(0, 0, 0, 0.5); }
+            50% { box-shadow: 0 0 0 8px rgba(46, 204, 113, 0), inset -1px -1px 2px rgba(0, 0, 0, 0.5); }
         }
 
         .gta-blip.home {
@@ -433,14 +393,8 @@
         }
 
         @keyframes waypointPulse {
-            0%, 100% {
-                transform: scale(1) rotate(0deg);
-                opacity: 1;
-            }
-            50% {
-                transform: scale(1.2) rotate(45deg);
-                opacity: 0.7;
-            }
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            50% { transform: scale(1.2) rotate(45deg); opacity: 0.7; }
         }
 
         /* Map Controls */
@@ -485,15 +439,13 @@
             #ui-container {
                 top: 8px;
                 left: 8px;
-            }
-
-            .toggle-btn {
-                padding: 6px 10px;
-                font-size: 9px;
+                width: calc(100vw - 16px);
+                max-height: 80vh;
             }
 
             .hud-panel {
-                width: 240px;
+                width: 100%;
+                max-width: 240px;
                 padding: 10px;
             }
 
@@ -517,9 +469,20 @@
             #speed-value {
                 font-size: 42px;
             }
+
+            .toggle-btn {
+                width: 80px;
+                padding: 6px 8px;
+                font-size: 9px;
+            }
         }
 
-        .btn:focus, select:focus {
+        .btn:focus {
+            outline: 2px solid var(--gta-cyan);
+            outline-offset: 2px;
+        }
+
+        select:focus {
             outline: 2px solid var(--gta-cyan);
             outline-offset: 2px;
         }
@@ -527,13 +490,13 @@
 </head>
 <body>
 
-    <!-- Visual FX Layers -->
+    <!-- Visual FX -->
     <div class="scanlines"></div>
     <div class="vignette"></div>
 
-    <!-- Main HUD Container -->
+    <!-- HUD Container -->
     <div id="ui-container">
-        <button class="toggle-btn" onclick="toggleHUD()">⬅️ SHOW/HIDE</button>
+        <button class="toggle-btn" onclick="toggleHUD()">◀ HIDE HUD</button>
         
         <div class="hud-panel" id="hud-panel">
             <h1>⚡ MAP_SYS_V5</h1>
@@ -552,16 +515,16 @@
 
             <div class="status-text" id="status">▌ SYSTEM INITIALIZED</div>
 
-            <!-- Route Information Panel -->
+            <!-- Route Panel -->
             <div id="route-panel" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(242, 201, 76, 0.15);">
-                <h2>🛣️ NAV</h2>
+                <h2>🛣️ NAVIGATION</h2>
                 <div id="route-info">
                     <div class="route-stat">
-                        <span class="route-stat-label">Dist:</span>
+                        <span class="route-stat-label">Distance:</span>
                         <span class="route-stat-value" id="route-distance">--</span>
                     </div>
                     <div class="route-stat">
-                        <span class="route-stat-label">ETA:</span>
+                        <span class="route-stat-label">Est. Time:</span>
                         <span class="route-stat-value" id="route-eta">--</span>
                     </div>
                 </div>
@@ -575,7 +538,7 @@
         <div id="speed-unit">MPH</div>
     </div>
 
-    <!-- Map Container -->
+    <!-- Map -->
     <div id="map"></div>
 
     <!-- Libraries -->
@@ -584,7 +547,7 @@
 
     <script>
         // ============================================
-        // CONFIG & STATE
+        // CONFIG
         // ============================================
         const CONFIG = {
             DEFAULT_ZOOM: 14,
@@ -603,9 +566,7 @@
             routingControl: null,
             watchId: null,
             currentLayer: null,
-            mapStyle: 'los-santos',
-            heading: 0,
-            routeData: null
+            heading: 0
         };
 
         // ============================================
@@ -648,7 +609,7 @@
         function playErrorBeep() { playBeep(300, 0.2, 150); }
 
         // ============================================
-        // MAP INITIALIZATION
+        // MAP SETUP
         // ============================================
         const tiles = {
             'los-santos': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -677,7 +638,7 @@
         STATE.currentLayer = tiles['los-santos'].addTo(map);
 
         // ============================================
-        // UTILITY FUNCTIONS
+        // UTILITIES
         // ============================================
         const updateStatus = (msg, type = 'normal') => {
             const el = document.getElementById('status');
@@ -700,24 +661,28 @@
         const formatDuration = (seconds) => {
             const hours = Math.floor(seconds / 3600);
             const mins = Math.floor((seconds % 3600) / 60);
-            if (hours > 0) return `${hours}h${mins}m`;
+            if (hours > 0) return `${hours}h ${mins}m`;
             return `${mins}m`;
         };
 
+        // ============================================
+        // UI TOGGLES
+        // ============================================
         function toggleHUD() {
-            const panel = document.getElementById('hud-panel');
-            panel.classList.toggle('minimized');
-            playBeep(500, 0.08);
+            const container = document.getElementById('ui-container');
+            const btn = document.querySelector('.toggle-btn');
+            container.classList.toggle('minimized');
+            btn.innerText = container.classList.contains('minimized') ? '▶ SHOW HUD' : '◀ HIDE HUD';
+            playBeep();
         }
 
         // ============================================
-        // MAP STYLE SWITCHING
+        // MAP STYLE
         // ============================================
         document.getElementById('map-style').addEventListener('change', (e) => {
             const style = e.target.value;
             map.removeLayer(STATE.currentLayer);
             STATE.currentLayer = tiles[style].addTo(map);
-            STATE.mapStyle = style;
 
             const mapEl = document.getElementById('map');
             mapEl.className = style === 'vice-city' ? 'vice-city-filter' : '';
@@ -727,7 +692,7 @@
         });
 
         // ============================================
-        // LIVE GPS TRACKING
+        // TRACKING
         // ============================================
         document.getElementById('btn-locate').addEventListener('click', () => {
             if (!navigator.geolocation) {
@@ -777,9 +742,7 @@
                     if (pos.coords.heading !== null && pos.coords.heading !== undefined) {
                         STATE.heading = pos.coords.heading;
                         const el = STATE.playerMarker.getElement();
-                        if (el) {
-                            el.style.transform = `rotate(${STATE.heading + 45}deg)`;
-                        }
+                        if (el) el.style.transform = `rotate(${STATE.heading + 45}deg)`;
                     }
 
                     updateStatus('▌ TRACKING ACTIVE', 'success');
@@ -791,16 +754,12 @@
                     updateStatus(`ERR: ${errMsg}`, 'error');
                     playErrorBeep();
                 },
-                {
-                    enableHighAccuracy: true,
-                    maximumAge: 0,
-                    timeout: 30000
-                }
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
             );
         });
 
         // ============================================
-        // SAFEHOUSE MANAGEMENT
+        // SAFEHOUSE
         // ============================================
         function loadSafehouse() {
             const saved = localStorage.getItem(CONFIG.STORAGE_KEY);
@@ -838,7 +797,7 @@
         });
 
         // ============================================
-        // WAYPOINT & ROUTING
+        // ROUTING
         // ============================================
         map.on('click', (e) => {
             playBeep();
@@ -911,10 +870,6 @@
             STATE.routingControl.on('routesfound', (e) => {
                 const route = e.routes[0];
                 if (route) {
-                    STATE.routeData = {
-                        distance: route.summary.totalDistance,
-                        duration: route.summary.totalTime
-                    };
                     document.getElementById('route-distance').innerText = formatDistance(route.summary.totalDistance);
                     document.getElementById('route-eta').innerText = formatDuration(route.summary.totalTime);
                     document.getElementById('route-panel').style.display = 'block';
