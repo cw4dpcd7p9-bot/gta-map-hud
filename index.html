@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>GTA-Style Map HUD V5 - Streets Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTA-Style Map HUD V3</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
@@ -14,14 +14,8 @@
             --gta-green: #2ecc71;
             --gta-pink: #ff00ff;
             --gta-yellow: #f1c40f;
-            --gta-purple: #9b59b6;
-            --gta-cyan: #00ffff;
-            --gta-red: #e74c3c;
-            --hud-bg: rgba(10, 10, 10, 0.93);
-            --hud-border: 2px solid var(--gta-gold);
+            --hud-bg: rgba(10, 10, 10, 0.9);
         }
-
-        * { box-sizing: border-box; }
 
         body, html {
             margin: 0; padding: 0; height: 100%; width: 100%;
@@ -29,871 +23,176 @@
             font-family: 'Impact', 'Arial Black', sans-serif;
             overflow: hidden;
             user-select: none;
-            -webkit-user-select: none;
-            touch-action: manipulation;
         }
         
-        #map {
-            height: 100vh; width: 100vw;
-            transition: filter 0.8s ease;
-        }
+        #map { height: 100vh; width: 100vw; transition: filter 0.8s ease; }
 
-        /* CRT Scanline Effect */
+        /* Visual FX */
         .scanlines {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(0, 0, 0, 0.12),
-                rgba(0, 0, 0, 0.12) 1px,
-                transparent 1px,
-                transparent 2px
-            );
-            pointer-events: none; z-index: 900;
-            animation: scanlineFlicker 0.15s infinite;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
+            background-size: 100% 4px; pointer-events: none; z-index: 900;
         }
-
-        @keyframes scanlineFlicker {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.97; }
-        }
-
         .vignette {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            box-shadow: 0 0 200px rgba(0, 0, 0, 0.9) inset;
-            pointer-events: none; z-index: 901;
+            box-shadow: 0 0 150px rgba(0,0,0,0.8) inset; pointer-events: none; z-index: 901;
         }
+        
+        .vice-city-filter { filter: hue-rotate(280deg) saturate(250%) contrast(130%) invert(10%); }
 
-        .vice-city-filter {
-            filter: hue-rotate(280deg) saturate(280%) contrast(140%) invert(12%) brightness(1.1);
-        }
-
-        /* HUD Container */
+        /* HUD Styling */
         #ui-container {
             position: absolute; top: 20px; left: 20px; z-index: 1000;
-            display: flex; flex-direction: column; gap: 12px;
-            pointer-events: none;
-        }
-
-        #ui-container.minimized {
-            transform: translateX(-330px);
-        }
-
-        .toggle-btn {
-            background: linear-gradient(to bottom, #f2c94c, #e8b923);
-            color: #000;
-            border: 2px solid #000;
-            padding: 8px 12px;
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: bold;
-            text-transform: uppercase;
-            border-radius: 2px;
-            width: 100px;
-            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.5);
-            position: relative;
-            top: 0;
-            transition: all 0.1s;
-            font-family: inherit;
-            letter-spacing: 1px;
-            pointer-events: auto;
-        }
-
-        .toggle-btn:hover {
-            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.5);
-            top: -2px;
-        }
-
-        .toggle-btn:active {
-            top: 4px;
-            box-shadow: 0 0 0 rgba(0, 0, 0, 0.5);
+            display: flex; flex-direction: column; gap: 15px; pointer-events: none; 
         }
 
         .hud-panel {
             background: var(--hud-bg);
-            border: var(--hud-border);
-            border-radius: 2px;
-            padding: 16px;
-            width: 310px;
-            box-shadow:
-                0 0 25px rgba(242, 201, 76, 0.3),
-                inset 0 0 15px rgba(0, 0, 0, 0.6),
-                0 8px 16px rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(12px);
-            animation: hudGlow 3s ease-in-out infinite;
-            pointer-events: auto;
-        }
-
-        @keyframes hudGlow {
-            0%, 100% { box-shadow: 0 0 25px rgba(242, 201, 76, 0.3), inset 0 0 15px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.8); }
-            50% { box-shadow: 0 0 35px rgba(242, 201, 76, 0.45), inset 0 0 15px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.8); }
-        }
-
-        .hud-panel.compact {
-            width: 280px;
-            padding: 12px;
-            animation: none;
-        }
-
-        h1 {
-            margin: 0 0 14px 0;
-            font-size: 26px;
-            text-transform: uppercase;
-            letter-spacing: 4px;
-            color: var(--gta-gold);
-            text-shadow:
-                3px 3px 0px #000,
-                2px 2px 0px var(--gta-cyan),
-                0 0 15px rgba(242, 201, 76, 0.3);
-            font-weight: 900;
-        }
-
-        h2 {
-            margin: 0 0 10px 0;
-            font-size: 14px;
-            color: var(--gta-yellow);
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
-
-        .btn {
-            background: linear-gradient(to bottom, #444, #1a1a1a);
-            color: #fff;
             border: 2px solid var(--gta-gold);
-            padding: 12px;
-            margin-bottom: 8px;
-            width: 100%;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 13px;
-            text-transform: uppercase;
-            transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
-            letter-spacing: 1.5px;
-            font-weight: bold;
-            box-shadow:
-                0 6px 0 rgba(0, 0, 0, 0.6),
-                0 0 10px rgba(242, 201, 76, 0.2);
-            position: relative;
-            top: 0;
-            outline: none;
+            border-radius: 4px; padding: 15px; width: 280px;
+            box-shadow: 0 0 15px rgba(242, 201, 76, 0.2);
+            pointer-events: auto; backdrop-filter: blur(8px);
         }
 
-        .btn:hover:not(:disabled) {
-            background: linear-gradient(to bottom, #555, #222);
-            box-shadow:
-                0 8px 0 rgba(0, 0, 0, 0.6),
-                0 0 15px rgba(242, 201, 76, 0.4);
-            top: -2px;
-            transform: scaleX(1.02);
-        }
-
-        .btn:active:not(:disabled) {
-            background: var(--gta-gold);
-            color: #000;
-            top: 6px;
-            box-shadow:
-                0 0 0 rgba(0, 0, 0, 0.6),
-                0 0 20px rgba(242, 201, 76, 0.6);
-            transform: scale(0.98);
-        }
-
-        .btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .btn.tracking {
-            border-color: var(--gta-green);
-            background: linear-gradient(to bottom, rgba(46, 204, 113, 0.2), rgba(46, 204, 113, 0.1));
-            box-shadow:
-                0 6px 0 rgba(0, 0, 0, 0.6),
-                0 0 15px rgba(46, 204, 113, 0.4);
-        }
-
-        select {
-            width: 100%;
-            padding: 11px;
-            margin-bottom: 14px;
-            background: #0a0a0a;
-            color: var(--gta-gold);
-            border: 1px solid var(--gta-gold);
-            font-family: inherit;
-            outline: none;
-            cursor: pointer;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s;
-            box-shadow: 0 0 10px rgba(242, 201, 76, 0.1);
-        }
-
-        select:hover {
-            background: rgba(242, 201, 76, 0.08);
-            box-shadow: 0 0 15px rgba(242, 201, 76, 0.25);
-        }
-
-        .status-text {
-            font-size: 11px;
-            color: #0f0;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid rgba(242, 201, 76, 0.15);
-            font-family: 'Courier New', Courier, monospace;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            line-height: 1.4;
-            min-height: 22px;
-            animation: statusBlink 1.5s infinite;
-        }
-
-        .status-text.error {
-            color: var(--gta-red);
-            text-shadow: 0 0 8px rgba(231, 76, 60, 0.6);
-            animation: errorFlash 0.5s;
-        }
-
-        .status-text.success {
-            color: var(--gta-green);
-            text-shadow: 0 0 8px rgba(46, 204, 113, 0.6);
-            animation: none;
-        }
-
-        @keyframes statusBlink {
-            0%, 49%, 100% { opacity: 1; }
-            50%, 99% { opacity: 0.6; }
-        }
-
-        @keyframes errorFlash {
-            0%, 100% { color: var(--gta-red); }
-            50% { color: #ff6b6b; }
-        }
-
-        /* Speedometer */
         #speed-panel {
             position: absolute; bottom: 30px; right: 30px; z-index: 1000;
-            background: var(--hud-bg);
-            border: var(--hud-border);
-            padding: 18px 28px;
-            border-radius: 2px;
-            text-align: right;
-            box-shadow:
-                0 0 30px rgba(0, 0, 0, 0.95),
-                0 0 20px rgba(242, 201, 76, 0.35),
-                inset 0 0 15px rgba(0, 0, 0, 0.6);
-            display: none;
-            backdrop-filter: blur(12px);
-            animation: speedGlow 2s ease-in-out infinite;
+            background: var(--hud-bg); border: 2px solid var(--gta-gold);
+            padding: 10px 20px; border-radius: 4px;
+            text-align: right; box-shadow: 0 0 20px rgba(0,0,0,0.8);
         }
 
-        @keyframes speedGlow {
-            0%, 100% { box-shadow: 0 0 30px rgba(0, 0, 0, 0.95), 0 0 20px rgba(242, 201, 76, 0.35), inset 0 0 15px rgba(0, 0, 0, 0.6); }
-            50% { box-shadow: 0 0 40px rgba(0, 0, 0, 0.95), 0 0 30px rgba(242, 201, 76, 0.5), inset 0 0 15px rgba(0, 0, 0, 0.6); }
-        }
+        #speed-value { font-size: 48px; color: #fff; line-height: 1; text-shadow: 2px 2px 0px var(--gta-gold); }
+        #speed-unit { font-size: 16px; color: var(--gta-gold); letter-spacing: 2px; }
 
-        #speed-value {
-            font-size: 64px;
-            color: #fff;
-            line-height: 1;
-            text-shadow:
-                3px 3px 0px var(--gta-gold),
-                -2px -2px 0px var(--gta-cyan),
-                0 0 20px rgba(242, 201, 76, 0.5);
-            letter-spacing: -3px;
-            font-weight: 900;
-        }
+        h1 { margin: 0 0 15px 0; font-size: 26px; text-transform: uppercase; letter-spacing: 2px; color: var(--gta-gold); text-shadow: 2px 2px 0px #000; }
 
-        #speed-unit {
-            font-size: 14px;
-            color: var(--gta-gold);
-            letter-spacing: 3px;
-            margin-top: 6px;
-            font-weight: bold;
-            text-transform: uppercase;
+        .btn {
+            background: linear-gradient(to bottom, #333, #111);
+            color: #fff; border: 1px solid var(--gta-gold);
+            padding: 12px; margin-bottom: 10px; width: 100%;
+            cursor: pointer; font-family: inherit; font-size: 14px;
+            text-transform: uppercase; transition: 0.1s;
         }
+        .btn:active { transform: scale(0.98); background: var(--gta-gold); color: #000; }
 
-        /* Route Info */
-        #route-info {
-            font-size: 11px;
-            color: var(--gta-green);
-            font-family: 'Courier New', monospace;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            line-height: 1.6;
-        }
+        select { width: 100%; padding: 10px; margin-bottom: 15px; background: #000; color: var(--gta-gold); border: 1px solid var(--gta-gold); font-family: inherit; outline: none; }
 
-        .route-stat {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(242, 201, 76, 0.15);
-        }
+        .status-text { font-size: 11px; color: #0f0; margin-top: 5px; font-family: 'Courier New', Courier, monospace; text-transform: uppercase; }
 
-        .route-stat:last-child {
-            border-bottom: none;
-        }
-
-        .route-stat-label {
-            color: var(--gta-gold);
-            font-weight: bold;
-        }
-
-        .route-stat-value {
-            color: var(--gta-green);
-            font-weight: bold;
-            text-align: right;
-        }
-
-        /* GTA Blip Markers */
-        .gta-blip {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #fff;
-            border: 2px solid #000;
-            border-radius: 50%;
-            filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.8));
-            transition: transform 0.1s linear;
-        }
-
+        /* GTA V Style Player Marker */
         .gta-blip.player {
-            background: radial-gradient(circle at 30% 30%, var(--gta-green), #1a8c3a);
-            border: 3px solid #fff;
-            border-radius: 50% 50% 50% 0;
-            animation: playerPulse 1.5s infinite;
-            filter: drop-shadow(0 0 8px rgba(46, 204, 113, 0.9));
-            box-shadow: inset -1px -1px 2px rgba(0, 0, 0, 0.5);
-        }
-
-        @keyframes playerPulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7), inset -1px -1px 2px rgba(0, 0, 0, 0.5); }
-            50% { box-shadow: 0 0 0 8px rgba(46, 204, 113, 0), inset -1px -1px 2px rgba(0, 0, 0, 0.5); }
-        }
-
-        .gta-blip.home {
-            background: radial-gradient(circle at 30% 30%, var(--gta-pink), #cc00cc);
-            border-radius: 3px;
+            background-color: var(--gta-green);
             border: 2px solid #fff;
-            animation: homePulse 1s infinite;
-            filter: drop-shadow(0 0 8px rgba(255, 0, 255, 0.8));
-            box-shadow: inset -1px -1px 2px rgba(0, 0, 0, 0.5);
+            border-radius: 50% 50% 50% 0;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.8);
+            transform-origin: center center;
+            transition: transform 0.2s linear; 
         }
+        .gta-blip.home { background-color: var(--gta-pink); border: 2px solid #fff; }
+        .gta-blip.waypoint { background-color: var(--gta-yellow); border: 2px solid #000; }
 
-        @keyframes homePulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.15); }
-        }
-
-        .gta-blip.waypoint {
-            background: radial-gradient(circle at 30% 30%, var(--gta-yellow), #cc9900);
-            border: 2px solid #000;
-            animation: waypointPulse 0.8s infinite;
-            filter: drop-shadow(0 0 8px rgba(241, 196, 15, 0.9));
-            box-shadow: inset -1px -1px 2px rgba(0, 0, 0, 0.4);
-        }
-
-        @keyframes waypointPulse {
-            0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
-            50% { transform: scale(1.2) rotate(45deg); opacity: 0.7; }
-        }
-
-        /* Map Controls */
         .leaflet-routing-container { display: none !important; }
-        .leaflet-control-zoom { display: none !important; }
-
-        /* Mobile Responsiveness */
-        @media (max-width: 768px) {
-            #ui-container {
-                top: 10px;
-                left: 10px;
-                gap: 10px;
-            }
-
-            .hud-panel {
-                width: 260px;
-                padding: 12px;
-            }
-
-            h1 {
-                font-size: 22px;
-                letter-spacing: 2px;
-            }
-
-            #speed-panel {
-                bottom: 20px;
-                right: 20px;
-                padding: 14px 20px;
-            }
-
-            #speed-value {
-                font-size: 48px;
-            }
-
-            .btn {
-                padding: 10px;
-                font-size: 12px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            #ui-container {
-                top: 8px;
-                left: 8px;
-                width: calc(100vw - 16px);
-                max-height: 80vh;
-            }
-
-            .hud-panel {
-                width: 100%;
-                max-width: 240px;
-                padding: 10px;
-            }
-
-            h1 {
-                font-size: 18px;
-                letter-spacing: 1.5px;
-            }
-
-            .btn {
-                padding: 9px;
-                font-size: 11px;
-                margin-bottom: 6px;
-            }
-
-            #speed-panel {
-                bottom: 15px;
-                right: 15px;
-                padding: 12px 16px;
-            }
-
-            #speed-value {
-                font-size: 42px;
-            }
-
-            .toggle-btn {
-                width: 80px;
-                padding: 6px 8px;
-                font-size: 9px;
-            }
-        }
-
-        .btn:focus {
-            outline: 2px solid var(--gta-cyan);
-            outline-offset: 2px;
-        }
-
-        select:focus {
-            outline: 2px solid var(--gta-cyan);
-            outline-offset: 2px;
-        }
     </style>
 </head>
 <body>
 
-    <!-- Visual FX -->
     <div class="scanlines"></div>
     <div class="vignette"></div>
 
-    <!-- HUD Container -->
     <div id="ui-container">
-        <button class="toggle-btn" onclick="toggleHUD()">◀ HIDE HUD</button>
-        
-        <div class="hud-panel" id="hud-panel">
-            <h1>⚡ MAP_SYS_V5</h1>
-
+        <div class="hud-panel">
+            <h1>MAP_SYS_V3</h1>
             <select id="map-style">
                 <option value="los-santos">Los Santos Dark</option>
                 <option value="vice-city">Vice City Neon</option>
                 <option value="liberty-city">Liberty City Classic</option>
                 <option value="san-andreas">San Andreas Satellite</option>
             </select>
-
-            <button class="btn" id="btn-locate">📡 Start Tracking</button>
+            <button class="btn" id="btn-locate">📡 Start Live Tracking</button>
             <button class="btn" id="btn-save-home">💾 Save Safehouse</button>
-            <button class="btn" id="btn-go-home">🚗 Route Home</button>
-            <button class="btn" id="btn-clear">❌ Clear Route</button>
-
-            <div class="status-text" id="status">▌ SYSTEM INITIALIZED</div>
-
-            <!-- Route Panel -->
-            <div id="route-panel" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(242, 201, 76, 0.15);">
-                <h2>🛣️ NAVIGATION</h2>
-                <div id="route-info">
-                    <div class="route-stat">
-                        <span class="route-stat-label">Distance:</span>
-                        <span class="route-stat-value" id="route-distance">--</span>
-                    </div>
-                    <div class="route-stat">
-                        <span class="route-stat-label">Est. Time:</span>
-                        <span class="route-stat-value" id="route-eta">--</span>
-                    </div>
-                </div>
-            </div>
+            <button class="btn" id="btn-go-home">🚗 Route to Safehouse</button>
+            <button class="btn" id="btn-clear">❌ Clear Data</button>
+            <div class="status-text" id="status">Awaiting input...</div>
         </div>
     </div>
 
-    <!-- Speedometer -->
-    <div id="speed-panel">
-        <div id="speed-value">000</div>
+    <div id="speed-panel" style="display: none;">
+        <div id="speed-value">0</div>
         <div id="speed-unit">MPH</div>
     </div>
 
-    <!-- Map -->
     <div id="map"></div>
 
-    <!-- Libraries -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 
     <script>
-        // ============================================
-        // CONFIG
-        // ============================================
-        const CONFIG = {
-            DEFAULT_ZOOM: 14,
-            TRACKING_ZOOM: 16,
-            DEFAULT_LAT: 34.0522,
-            DEFAULT_LNG: -118.2437,
-            STORAGE_KEY: 'gta_safehouse'
-        };
-
-        let STATE = {
-            isTracking: false,
-            currentPos: null,
-            playerMarker: null,
-            homeMarker: null,
-            waypointMarker: null,
-            routingControl: null,
-            watchId: null,
-            currentLayer: null,
-            heading: 0
-        };
-
-        // ============================================
-        // AUDIO SYSTEM
-        // ============================================
-        let audioCtx = null;
-
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-        }
-
-        function playBeep(freq = 600, duration = 0.1, endFreq = 300) {
-            try {
-                initAudio();
-                const now = audioCtx.currentTime;
-                const osc = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(freq, now);
-                osc.frequency.exponentialRampToValueAtTime(endFreq, now + duration);
-
-                gainNode.gain.setValueAtTime(0.08, now);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, now + duration);
-
-                osc.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-
-                osc.start(now);
-                osc.stop(now + duration);
-            } catch (e) {
-                console.warn('Audio unavailable');
-            }
-        }
-
-        function playSuccessBeep() { playBeep(800, 0.1, 1200); }
-        function playErrorBeep() { playBeep(300, 0.2, 150); }
-
-        // ============================================
-        // MAP SETUP
-        // ============================================
         const tiles = {
-            'los-santos': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '© OpenStreetMap, © CartoDB',
-                maxZoom: 19
-            }),
-            'vice-city': L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                attribution: '© OpenStreetMap, © CartoDB',
-                maxZoom: 19
-            }),
-            'liberty-city': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap',
-                maxZoom: 19
-            }),
-            'san-andreas': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: 'Tiles © Esri',
-                maxZoom: 18
-            })
+            'los-santos': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'),
+            'vice-city': L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'),
+            'liberty-city': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
+            'san-andreas': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}')
         };
 
-        const map = L.map('map', {
-            zoomControl: false,
-            attributionControl: false
-        }).setView([CONFIG.DEFAULT_LAT, CONFIG.DEFAULT_LNG], CONFIG.DEFAULT_ZOOM);
+        const map = L.map('map', { zoomControl: false }).setView([34.0522, -118.2437], 14); 
+        let currentLayer = tiles['los-santos'].addTo(map);
 
-        STATE.currentLayer = tiles['los-santos'].addTo(map);
+        let playerMarker = null, homeMarker = null, waypointMarker = null, routingControl = null;
+        let currentPos = null, watchId = null;
 
-        // ============================================
-        // UTILITIES
-        // ============================================
-        const updateStatus = (msg, type = 'normal') => {
-            const el = document.getElementById('status');
-            el.innerText = `▌ ${msg}`;
-            el.className = `status-text ${type === 'error' ? 'error' : type === 'success' ? 'success' : ''}`;
-        };
+        const updateStatus = (msg) => document.getElementById('status').innerText = `> ${msg}`;
 
-        const createIcon = (className) => L.divIcon({
-            className: `gta-blip ${className}`,
-            iconSize: [22, 22],
-            iconAnchor: [11, 11],
-            html: ''
-        });
-
-        const formatDistance = (meters) => {
-            if (meters < 1000) return Math.round(meters) + 'm';
-            return (meters / 1000).toFixed(1) + 'km';
-        };
-
-        const formatDuration = (seconds) => {
-            const hours = Math.floor(seconds / 3600);
-            const mins = Math.floor((seconds % 3600) / 60);
-            if (hours > 0) return `${hours}h ${mins}m`;
-            return `${mins}m`;
-        };
-
-        // ============================================
-        // UI TOGGLES
-        // ============================================
-        function toggleHUD() {
-            const container = document.getElementById('ui-container');
-            const btn = document.querySelector('.toggle-btn');
-            container.classList.toggle('minimized');
-            btn.innerText = container.classList.contains('minimized') ? '▶ SHOW HUD' : '◀ HIDE HUD';
-            playBeep();
-        }
-
-        // ============================================
-        // MAP STYLE
-        // ============================================
         document.getElementById('map-style').addEventListener('change', (e) => {
-            const style = e.target.value;
-            map.removeLayer(STATE.currentLayer);
-            STATE.currentLayer = tiles[style].addTo(map);
-
-            const mapEl = document.getElementById('map');
-            mapEl.className = style === 'vice-city' ? 'vice-city-filter' : '';
-
-            updateStatus(`STYLE: ${style.replace(/-/g, ' ').toUpperCase()}`, 'success');
-            playBeep(800, 0.08);
+            map.removeLayer(currentLayer);
+            currentLayer = tiles[e.target.value].addTo(map);
+            document.getElementById('map').className = e.target.value === 'vice-city' ? 'vice-city-filter' : '';
         });
 
-        // ============================================
-        // TRACKING
-        // ============================================
         document.getElementById('btn-locate').addEventListener('click', () => {
-            if (!navigator.geolocation) {
-                updateStatus('ERR: GPS NOT AVAILABLE', 'error');
-                playErrorBeep();
-                return;
-            }
-
-            if (STATE.isTracking) {
-                navigator.geolocation.clearWatch(STATE.watchId);
-                STATE.isTracking = false;
-                document.getElementById('speed-panel').style.display = 'none';
-                document.getElementById('btn-locate').classList.remove('tracking');
-                document.getElementById('btn-locate').innerText = '📡 Start Tracking';
-                updateStatus('TRACKING STOPPED', 'normal');
-                return;
-            }
-
-            STATE.isTracking = true;
-            document.getElementById('btn-locate').classList.add('tracking');
-            document.getElementById('btn-locate').innerText = '⏹️ Stop Tracking';
             document.getElementById('speed-panel').style.display = 'block';
-            updateStatus('SATELLITE CONNECTION...', 'normal');
-
-            if (STATE.watchId) navigator.geolocation.clearWatch(STATE.watchId);
-
-            STATE.watchId = navigator.geolocation.watchPosition(
-                (pos) => {
-                    STATE.currentPos = {
-                        lat: pos.coords.latitude,
-                        lng: pos.coords.longitude
-                    };
-
-                    if (!STATE.playerMarker) {
-                        STATE.playerMarker = L.marker(STATE.currentPos, {
-                            icon: createIcon('player')
-                        }).addTo(map);
-                        map.setView(STATE.currentPos, CONFIG.TRACKING_ZOOM);
-                        playSuccessBeep();
-                    } else {
-                        STATE.playerMarker.setLatLng(STATE.currentPos);
-                    }
-
-                    const speed = pos.coords.speed ? Math.round(pos.coords.speed * 2.23694) : 0;
-                    document.getElementById('speed-value').innerText = speed.toString().padStart(3, '0');
-
-                    if (pos.coords.heading !== null && pos.coords.heading !== undefined) {
-                        STATE.heading = pos.coords.heading;
-                        const el = STATE.playerMarker.getElement();
-                        if (el) el.style.transform = `rotate(${STATE.heading + 45}deg)`;
-                    }
-
-                    updateStatus('▌ TRACKING ACTIVE', 'success');
-                },
-                (err) => {
-                    let errMsg = 'SIGNAL LOST';
-                    if (err.code === 1) errMsg = 'ACCESS DENIED';
-                    else if (err.code === 3) errMsg = 'TIMEOUT';
-                    updateStatus(`ERR: ${errMsg}`, 'error');
-                    playErrorBeep();
-                },
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
-            );
-        });
-
-        // ============================================
-        // SAFEHOUSE
-        // ============================================
-        function loadSafehouse() {
-            const saved = localStorage.getItem(CONFIG.STORAGE_KEY);
-            if (saved) {
-                try {
-                    const coords = JSON.parse(saved);
-                    STATE.homeMarker = L.marker([coords.lat, coords.lng], {
-                        icon: createIcon('home')
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+            watchId = navigator.geolocation.watchPosition((pos) => {
+                currentPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                
+                if (!playerMarker) {
+                    playerMarker = L.marker(currentPos, {
+                        icon: L.divIcon({ className: 'gta-blip player', iconSize: [20, 20], iconAnchor: [10, 10] })
                     }).addTo(map);
-                    updateStatus('SAFEHOUSE LOADED', 'success');
-                } catch (e) {
-                    console.warn('Failed to load safehouse');
                 }
-            }
-        }
+                playerMarker.setLatLng(currentPos);
 
-        loadSafehouse();
+                if (pos.coords.heading !== null) {
+                    playerMarker.getElement().style.transform = `rotate(${pos.coords.heading - 45}deg)`;
+                }
+
+                document.getElementById('speed-value').innerText = pos.coords.speed ? Math.round(pos.coords.speed * 2.23694) : 0;
+            }, null, { enableHighAccuracy: true });
+        });
 
         document.getElementById('btn-save-home').addEventListener('click', () => {
-            if (!STATE.currentPos) {
-                updateStatus('ERR: GPS REQUIRED', 'error');
-                playErrorBeep();
-                return;
-            }
-
-            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(STATE.currentPos));
-            if (STATE.homeMarker) map.removeLayer(STATE.homeMarker);
-
-            STATE.homeMarker = L.marker(STATE.currentPos, {
-                icon: createIcon('home')
-            }).addTo(map);
-
-            updateStatus('SAFEHOUSE SAVED ✓', 'success');
-            playSuccessBeep();
+            if (!currentPos) return;
+            localStorage.setItem('gta_safehouse', JSON.stringify(currentPos));
+            if (homeMarker) map.removeLayer(homeMarker);
+            homeMarker = L.marker(currentPos, {icon: L.divIcon({className: 'gta-blip home', iconSize: [20, 20], iconAnchor: [10, 10]})}).addTo(map);
+            updateStatus('SAFEHOUSE SAVED');
         });
 
-        // ============================================
-        // ROUTING
-        // ============================================
         map.on('click', (e) => {
-            playBeep();
-            if (STATE.waypointMarker) map.removeLayer(STATE.waypointMarker);
-
-            STATE.waypointMarker = L.marker(e.latlng, {
-                icon: createIcon('waypoint')
-            }).addTo(map);
-
-            if (STATE.currentPos) {
-                routeTo(e.latlng);
-                updateStatus('ROUTE CALCULATED', 'success');
-            } else {
-                updateStatus('WAYPOINT SET • ENABLE GPS', 'normal');
-            }
-        });
-
-        document.getElementById('btn-go-home').addEventListener('click', () => {
-            if (!STATE.currentPos) {
-                updateStatus('ERR: GPS REQUIRED', 'error');
-                playErrorBeep();
-                return;
-            }
-            if (!STATE.homeMarker) {
-                updateStatus('ERR: NO SAFEHOUSE', 'error');
-                playErrorBeep();
-                return;
-            }
-
-            routeTo(STATE.homeMarker.getLatLng());
-            updateStatus('ROUTING HOME...', 'normal');
-        });
-
-        document.getElementById('btn-clear').addEventListener('click', () => {
-            if (STATE.routingControl) {
-                map.removeControl(STATE.routingControl);
-                STATE.routingControl = null;
-            }
-            if (STATE.waypointMarker) {
-                map.removeLayer(STATE.waypointMarker);
-                STATE.waypointMarker = null;
-            }
-            document.getElementById('route-panel').style.display = 'none';
-            updateStatus('ROUTE CLEARED', 'normal');
-            playBeep(300, 0.1);
+            if (waypointMarker) map.removeLayer(waypointMarker);
+            waypointMarker = L.marker(e.latlng, {icon: L.divIcon({className: 'gta-blip waypoint', iconSize: [20, 20], iconAnchor: [10, 10]})}).addTo(map);
+            if (currentPos) routeTo(e.latlng);
         });
 
         function routeTo(destination) {
-            if (STATE.routingControl) map.removeControl(STATE.routingControl);
-
-            STATE.routingControl = L.Routing.control({
-                waypoints: [STATE.currentPos, destination],
-                router: L.Routing.osrmv1({
-                    serviceUrl: 'https://router.project-osrm.org/route/v1'
-                }),
-                lineOptions: {
-                    styles: [
-                        { color: '#9b59b6', opacity: 0.85, weight: 8 },
-                        { color: '#7a3d8c', opacity: 0.3, weight: 12 }
-                    ]
-                },
+            if (routingControl) map.removeControl(routingControl);
+            routingControl = L.Routing.control({
+                waypoints: [ currentPos, destination ],
+                router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
+                lineOptions: { styles: [{color: '#9b59b6', opacity: 0.8, weight: 7}] },
                 createMarker: () => null,
-                fitSelectedRoutes: true,
-                show: false,
-                addWaypoints: false,
-                draggableWaypoints: false,
-                routeWhileDragging: false
-            });
-
-            STATE.routingControl.on('routesfound', (e) => {
-                const route = e.routes[0];
-                if (route) {
-                    document.getElementById('route-distance').innerText = formatDistance(route.summary.totalDistance);
-                    document.getElementById('route-eta').innerText = formatDuration(route.summary.totalTime);
-                    document.getElementById('route-panel').style.display = 'block';
-                }
-            });
-
-            STATE.routingControl.on('routingerror', () => {
-                updateStatus('ROUTING SERVICE ERROR', 'error');
-                playErrorBeep();
-            });
-
-            STATE.routingControl.addTo(map);
+                fitSelectedRoutes: false, show: false 
+            }).addTo(map);
         }
-
-        // ============================================
-        // LIFECYCLE
-        // ============================================
-        window.addEventListener('beforeunload', () => {
-            if (STATE.watchId) navigator.geolocation.clearWatch(STATE.watchId);
-        });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            updateStatus('▌ SYSTEM READY', 'success');
-        });
     </script>
 </body>
 </html>
